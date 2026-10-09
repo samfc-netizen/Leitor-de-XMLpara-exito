@@ -4,7 +4,6 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 import pandas as pd
 import streamlit as st
-import plotly.express as px
 
 st.set_page_config(page_title='Painel de Notas Fiscais', page_icon='🧾', layout='wide')
 st.markdown('''<style>
@@ -123,24 +122,18 @@ with left:
     st.subheader('Faturamento por destinatário')
     top=clients.head(12).sort_values('Faturamento')
     if not top.empty:
-        fig=px.bar(top,x='Faturamento',y='Destinatário',orientation='h',text='Notas',color_discrete_sequence=['#2668d8'])
-        fig.update_layout(height=max(370,len(top)*37),margin=dict(l=10,r=10,t=12,b=10),paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)',yaxis_title=None,xaxis_title='Valor (R$)')
-        st.plotly_chart(fig,use_container_width=True)
+        st.bar_chart(top.set_index('Destinatário')['Faturamento'], horizontal=True, use_container_width=True)
 with right:
     st.subheader('Quantidade de notas por destinatário')
     topq=clients.nlargest(10,'Notas')
     if not topq.empty:
-        fig=px.pie(topq,values='Notas',names='Destinatário',hole=.58)
-        fig.update_layout(height=400,margin=dict(l=0,r=0,t=10,b=10),legend=dict(orientation='h',y=-.1))
-        st.plotly_chart(fig,use_container_width=True)
+        st.bar_chart(topq.set_index('Destinatário')['Notas'], horizontal=True, use_container_width=True)
 st.subheader('Evolução do faturamento')
 valid=f.dropna(subset=['Data']).copy()
 if not valid.empty:
     valid['Mês']=pd.to_datetime(valid['Data']).dt.to_period('M').astype(str)
     evolution=valid.groupby('Mês',as_index=False).agg(Faturamento=('Valor','sum'),Notas=('Número','size'))
-    fig=px.bar(evolution,x='Mês',y='Faturamento',text='Notas',color_discrete_sequence=['#2668d8'])
-    fig.update_layout(height=300,margin=dict(l=10,r=10,t=10,b=10),paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)',xaxis_title=None,yaxis_title='Faturamento (R$)')
-    st.plotly_chart(fig,use_container_width=True)
+    st.bar_chart(evolution.set_index('Mês')['Faturamento'], use_container_width=True)
 st.subheader('Resumo por destinatário')
 show=clients[['Destinatário','CNPJ Destinatário','Notas','Faturamento','Participação %']]
 st.dataframe(show,use_container_width=True,hide_index=True,column_config={'Faturamento':st.column_config.NumberColumn(format='R$ %.2f'),'Participação %':st.column_config.NumberColumn(format='%.2f%%')})
